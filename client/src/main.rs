@@ -7,12 +7,10 @@ use std::process;
 const SOCKET_NAME: &str = "msl-code.sock";
 
 /// Returns the socket path following Linux best practices:
-/// 1. `$XDG_RUNTIME_DIR/msl-code.sock` — standard on Linux (typically /run/user/<uid>)
-/// 2. `$TMPDIR/msl-code.sock` — per-user temp dir
-/// 3. `/tmp/msl-code.sock` — universal fallback
+/// 1. `$XDG_RUNTIME_DIR/msl-code.sock` — stable on systemd-based Linux (`/run/user/<uid>`)
+/// 2. `/tmp/msl-code.sock` — universal fallback
 fn socket_path() -> PathBuf {
     env::var_os("XDG_RUNTIME_DIR")
-        .or_else(|| env::var_os("TMPDIR"))
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join(SOCKET_NAME)

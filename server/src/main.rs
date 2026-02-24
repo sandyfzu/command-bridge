@@ -8,20 +8,26 @@ use std::process::{self, Command};
 const SOCKET_NAME: &str = "msl-code.sock";
 const REMOTE: &str = "ssh-remote+lima-msl";
 
-/// Returns the socket path following macOS best practices:
-/// 1. `$TMPDIR/msl-code.sock` — per-user private dir (preferred on macOS)
-/// 2. `$XDG_RUNTIME_DIR/msl-code.sock` — standard on Linux
-/// 3. `/tmp/msl-code.sock` — universal fallback
+/// Returns a stable socket path under `~/.local/run/`.
+///
+/// Unlike `$TMPDIR` (which changes across macOS reboots), this path is
+/// deterministic and survives restarts — critical for the SSH `RemoteForward`
+/// config to remain valid.
 fn socket_path() -> PathBuf {
-    env::var_os("TMPDIR")
-        .or_else(|| env::var_os("XDG_RUNTIME_DIR"))
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("/tmp"))
-        .join(SOCKET_NAME)
+    let home = env::var_os("HOME").expect("$HOME is not set");
+    PathBuf::from(home).join(".local/run").join(SOCKET_NAME)
 }
 
 fn main() {
     let socket = socket_path();
+
+    // Ensure the parent directory exists
+    if let Some(parent) = socket.parent() {
+        fs::create_dir_all(parent).unwrap_or_else(|e| {
+            eprintln!("msl-server: failed to create {}: {e}", parent.display());
+            process::exit(1);
+        });
+    }
 
     // Clean up stale socket
     let _ = fs::remove_file(&socket);
