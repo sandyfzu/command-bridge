@@ -10,7 +10,7 @@ Lima VM (Linux)                         macOS
 code ~/projects/app                     msl-server
   → resolve to absolute path              ← listens on Unix socket
   → write path to socket ──────────────→  → receives path
-         (SSH RemoteForward)              → runs: code --remote ssh-remote+lima-msl<path> <path>
+         (SSH RemoteForward)              → runs: code --folder-uri vscode-remote://ssh-remote+lima-msl<path>
                                           → VS Code opens remote window into VM
 ```
 
@@ -105,6 +105,14 @@ Host lima-msl
 ```
 
 > Replace `<uid>` with your VM user's UID and `<your-user>` with your macOS username.
+
+Then enable automatic cleanup of stale sockets inside the VM. Add to `/etc/ssh/sshd_config` in the VM:
+
+```sh
+ssh lima-msl 'echo "StreamLocalBindUnlink yes" | sudo tee -a /etc/ssh/sshd_config && sudo systemctl restart ssh'
+```
+
+This tells the SSH server to remove leftover sockets before creating new ones, so reconnecting always works.
 
 ### 2. Start on login (LaunchAgent)
 

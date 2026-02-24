@@ -55,11 +55,10 @@ fn main() {
 
                     eprintln!("msl-server: opening {path}");
 
-                    let remote_arg = format!("{REMOTE}{path}");
+                    let folder_uri = format!("vscode-remote://{REMOTE}{path}");
                     let status = Command::new("code")
-                        .arg("--remote")
-                        .arg(&remote_arg)
-                        .arg(&path)
+                        .arg("--folder-uri")
+                        .arg(&folder_uri)
                         .status();
 
                     match status {
