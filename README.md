@@ -101,10 +101,10 @@ Add to `~/.ssh/config` (before or after the Lima `Include`):
 
 ```ssh-config
 Host lima-msl
-  RemoteForward /run/user/501/msl-code.sock /Users/sandyfigueroa/.local/run/msl-code.sock
+  RemoteForward /run/user/<uid>/msl-code.sock /Users/<your-user>/.local/run/msl-code.sock
 ```
 
-> Replace `/run/user/501` with your VM's actual `$XDG_RUNTIME_DIR` value.
+> Replace `<uid>` with your VM user's UID and `<your-user>` with your macOS username.
 
 ### 2. Start on login (LaunchAgent)
 
