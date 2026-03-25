@@ -5,3 +5,11 @@ members = ["server", "client"]
 [workspace.package]
 version = "0.2.0"
 edition = "2024"
+
+[profile.release]
+opt-level = 3        # All optimizations (LLVM O3)
+lto = "fat"          # Whole-program LTO across all crates in the dependency graph
+codegen-units = 1    # Single codegen unit; required for maximum inlining/optimization across functions
+panic = "abort"      # Abort immediately on panic; removes unwinding machinery (~10–20% smaller binary)
+strip = "symbols"    # Strip symbol table from the final binary (reduces binary size for distribution)
+debug = false        # No debug info in release binary (already the default)
