@@ -4,8 +4,8 @@ version = 4
 
 [[package]]
 name = "command-bridge-client"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "command-bridge-server"
-version = "0.1.0"
+version = "0.2.0"

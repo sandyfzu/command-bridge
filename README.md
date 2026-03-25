@@ -1,6 +1,6 @@
 # Command Bridge
 
-A lightweight Rust tool that lets you run `code .` inside a [Lima](https://lima-vm.io/) VM and have VS Code open on your macOS host — just like WSL on Windows.
+A lightweight Rust tool that lets you run `code .` (or `code-insiders .`) inside a [Lima](https://lima-vm.io/) VM and have VS Code open on your macOS host — just like WSL on Windows.
 
 ## How it works
 
@@ -8,25 +8,25 @@ A lightweight Rust tool that lets you run `code .` inside a [Lima](https://lima-
 Lima VM (Linux)                         macOS
 ─────────────────                       ──────────────────
 code ~/projects/app                     msl-server
-  → resolve to absolute path              ← listens on Unix socket
-  → write path to socket ──────────────→  → receives path
-         (SSH RemoteForward)              → runs: code --folder-uri vscode-remote://ssh-remote+lima-msl<path>
-                                          → VS Code opens remote window into VM
+  → detect command (code / code-insiders) ← listens on Unix socket
+  → resolve to absolute path              → receives command + path
+  → write command\tpath to socket ──────→ → runs: <cmd> --folder-uri vscode-remote://ssh-remote+lima-msl<path>
+         (SSH RemoteForward)              → VS Code (or Insiders) opens remote window into VM
 ```
 
 Two tiny binaries communicate over a Unix socket forwarded through SSH:
 
 | Binary | Runs on | Purpose |
 |---|---|---|
-| **client** (`code`) | Linux VM | Resolves the path and sends it to the socket |
-| **server** (`msl-server`) | macOS | Listens on the socket and launches VS Code with `--remote` |
+| **client** (`code` / `code-insiders`) | Linux VM | Detects which editor was invoked, resolves the path, and sends both to the socket |
+| **server** (`msl-server`) | macOS | Listens on the socket and launches the requested editor (`code` or `code-insiders`) with `--remote` |
 
 Zero dependencies beyond `std`. Static binaries. ~40 lines each.
 
 ## Prerequisites
 
 - [Lima](https://lima-vm.io/) VM named `msl` (any Lima VM works — adjust the `REMOTE` constant)
-- [VS Code](https://code.visualstudio.com/) with `code` CLI on macOS PATH
+- [VS Code](https://code.visualstudio.com/) with `code` CLI on macOS PATH (and/or [VS Code Insiders](https://code.visualstudio.com/insiders/) with `code-insiders` CLI)
 - [Rust](https://rustup.rs/) toolchain (for building)
 - SSH config with the Lima VM accessible as `lima-msl`
 
@@ -60,8 +60,11 @@ If cross-compiled from macOS:
 # Create ~/bin if needed
 ssh lima-msl 'mkdir -p ~/bin'
 
-# Deploy and rename to "code"
+# Deploy as "code"
 scp target/aarch64-unknown-linux-musl/release/command-bridge-client lima-msl:~/bin/code
+
+# Deploy as "code-insiders" (symlink — same binary)
+ssh lima-msl 'ln -sf ~/bin/code ~/bin/code-insiders'
 ```
 
 If built from inside the VM:
@@ -69,6 +72,7 @@ If built from inside the VM:
 ```sh
 mkdir -p ~/bin
 cp target/release/command-bridge-client ~/bin/code
+ln -sf ~/bin/code ~/bin/code-insiders
 ```
 
 Make sure `~/bin` is in `PATH` inside the VM. Add to `~/.bashrc`:
@@ -148,11 +152,15 @@ tail -f /tmp/msl-server.stderr.log
 From inside the VM:
 
 ```sh
-code .                      # open current directory
-code ~/projects/myapp       # open specific path
+code .                      # open current directory in VS Code
+code ~/projects/myapp       # open specific path in VS Code
+code-insiders .             # open current directory in VS Code Insiders
+code-insiders ~/projects/myapp  # open specific path in VS Code Insiders
 ```
 
-VS Code opens on macOS with a remote SSH window connected to the VM at that path.
+The editor on macOS opens a remote SSH window connected to the VM at that path.
+
+The client binary detects which editor to use from its own filename (`argv[0]`), so a single binary deployed as both `code` and `code-insiders` (via symlink) is all that's needed.
 
 ## Socket paths
 
